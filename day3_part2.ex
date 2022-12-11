@@ -58,9 +58,6 @@ groupPriority = List.foldl(groups, 0, fn group, acc ->
         # IO.puts("if")
         {:cont, subacc}
       else
-        # IO.puts("in else") 
-        # IO.puts(subacc)
-        # IO.puts(letterMap[x])
         {:halt, subacc + letterMap[x]}
       end
     end)
@@ -68,8 +65,5 @@ groupPriority = List.foldl(groups, 0, fn group, acc ->
   else
     acc 
   end
-  
-  
-  # acc + priority
 end)
 IO.inspect(groupPriority)

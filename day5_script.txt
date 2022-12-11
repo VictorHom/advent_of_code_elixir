@@ -1,0 +1,3 @@
+
+awk -F'move | from | to ]' '{print $1,$2,$3}' ./day5_input_instructions.txt
+
