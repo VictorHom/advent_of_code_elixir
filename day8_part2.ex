@@ -22,15 +22,17 @@ defmodule TreeChecker do
     # hardcoded 99 
     def checkLeft(currentTreeHeight, rowNum, colNum, updatedTrees, rowsWithColumnIndex) do
         rowOfTrees = Map.get(updatedTrees, rowNum)
-        visible = Enum.reduce_while(Enum.sort(Map.keys(rowsWithColumnIndex)), true, fn currentColNum, acc -> 
+        visible = Enum.reduce_while(Enum.sort(Map.keys(rowsWithColumnIndex)), 0, fn currentColNum, acc -> 
             # IO.inspect("???")
+            # realizing I would have to redo lots of this to work
+            # wasn't sure how to loop back from tree in elixir
             cond do
             rowNum == 0 or rowNum + 1 >= 99 -> 
-                {:halt, true}
+                {:halt, acc}
             currentColNum < colNum and String.to_integer(Map.get(rowsWithColumnIndex, currentColNum)) >= String.to_integer(currentTreeHeight) ->
-                {:halt, false}
+                {:halt, acc}
             currentColNum >= colNum ->
-                {:halt, true}
+                {:halt, acc}
             true ->
                 {:cont, true}
             end
