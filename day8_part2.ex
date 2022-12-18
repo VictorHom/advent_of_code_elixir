@@ -13,7 +13,7 @@ end)
 # IO.inspect(length(Enum.at(trees, 0)))
 # IO.inspect(length(Enum.at(trees, 98)))
 numOfRows = length(trees)
-IO.inspect(numOfRows)
+# IO.inspect(numOfRows)
 numOfColumns = length(Enum.at(trees, 0))
 updatedTrees = trees |> Enum.with_index(0) |>Enum.map(fn {k,v}->{v,k} end) |> Map.new
 
@@ -22,19 +22,19 @@ defmodule TreeChecker do
     # hardcoded 99 
     def checkLeft(currentTreeHeight, rowNum, colNum, updatedTrees, rowsWithColumnIndex) do
         rowOfTrees = Map.get(updatedTrees, rowNum)
-        visible = Enum.reduce_while(Enum.sort(Map.keys(rowsWithColumnIndex)), 0, fn currentColNum, acc -> 
-            # IO.inspect("???")
-            # realizing I would have to redo lots of this to work
-            # wasn't sure how to loop back from tree in elixir
+        visible = Enum.reduce_while(Enum.sort(Map.keys(rowsWithColumnIndex), :desc), 1, fn currentColNum, acc -> 
+            
             cond do
-            rowNum == 0 or rowNum + 1 >= 99 -> 
+            rowNum == 0 or rowNum + 1 >= 99 ->
+                {:halt, acc}
+            currentColNum == 0 -> 
                 {:halt, acc}
             currentColNum < colNum and String.to_integer(Map.get(rowsWithColumnIndex, currentColNum)) >= String.to_integer(currentTreeHeight) ->
                 {:halt, acc}
+            currentColNum < colNum and String.to_integer(Map.get(rowsWithColumnIndex, currentColNum)) < String.to_integer(currentTreeHeight) ->
+                {:cont, acc + 1}
             currentColNum >= colNum ->
-                {:halt, acc}
-            true ->
-                {:cont, true}
+                {:cont, acc}
             end
         end)
         visible
@@ -42,80 +42,91 @@ defmodule TreeChecker do
 
     def checkRight(currentTreeHeight, rowNum, colNum, updatedTrees, rowsWithColumnIndex) do
         rowOfTrees = Map.get(updatedTrees, rowNum)
-        visible = Enum.reduce_while(Enum.sort(Map.keys(rowsWithColumnIndex)), true, fn currentColNum, acc -> 
-            # IO.inspect("======")
+        visible = Enum.reduce_while(Enum.sort(Map.keys(rowsWithColumnIndex)), 1, fn currentColNum, acc -> 
             cond do
-            rowNum == 0 or rowNum + 1 >= 99 -> {:halt, true}
+            rowNum == 0 or rowNum + 1 >= 99 -> {:halt, acc}
+            currentColNum + 1 == length(rowOfTrees) ->
+                {:halt, acc}
             currentColNum > colNum and String.to_integer(Map.get(rowsWithColumnIndex, currentColNum)) >= String.to_integer(currentTreeHeight) ->
-                {:halt, false}
+                {:halt, acc}
+            currentColNum > colNum and String.to_integer(Map.get(rowsWithColumnIndex, currentColNum)) < String.to_integer(currentTreeHeight) ->
+                {:cont, acc + 1}
             currentColNum <= colNum ->
-                {:cont, true}
-            true ->
-                {:cont, true}
+                {:cont, acc}
             end
         end)
         visible
     end
 
     def checkUp(currentTreeHeight, rowNum, colNum, updatedTrees, rowsWithColumnIndex) do
-        visible = List.foldl(Enum.sort(Map.keys(updatedTrees)), true, fn rowNumber, acc ->
+        visible = Enum.reduce_while(Enum.sort(Map.keys(updatedTrees), :desc), 1, fn rowNumber, acc ->
            row = Map.get(updatedTrees, rowNumber)
-           # IO.inspect(row)
-           # IO.inspect(colNum)
            tree = Enum.at(row, colNum)
-           # IO.inspect(tree)
-           # IO.inspect()
            cond do
-                colNum == 0 or colNum + 1 >= 99 -> true
+                colNum == 0 or colNum + 1 >= 99 -> {:halt, acc}
+                rowNumber == 0 ->
+                    {:halt, acc}
                 rowNumber < rowNum and String.to_integer(tree) >= String.to_integer(currentTreeHeight) -> 
-                # IO.inspect("in false")
-                false
-               true -> acc
+                    {:halt, acc}
+                rowNumber < rowNum and String.to_integer(tree) < String.to_integer(currentTreeHeight) -> 
+                    {:cont, acc + 1 }
+                rowNumber >= rowNum ->
+                    {:cont, acc}
            end
         end)
-        # IO.inspect(visible)
         visible
     end
 
     def checkDown(currentTreeHeight, rowNum, colNum, updatedTrees, rowsWithColumnIndex) do
-        visible = List.foldl(Enum.sort(Map.keys(updatedTrees)), true, fn rowNumber, acc ->
+        visible = Enum.reduce_while(Enum.sort(Map.keys(updatedTrees)), 1, fn rowNumber, acc ->
            row = Map.get(updatedTrees, rowNumber)
            tree = Enum.at(row, colNum)
            cond do
-                colNum == 0 or colNum + 1 >= 99 -> true
-                rowNumber > rowNum and String.to_integer(tree) >= String.to_integer(currentTreeHeight) -> false
-                true -> acc
+                colNum == 0 or colNum + 1 >= 99 -> {:halt, acc}
+                rowNumber + 1 ==  length(Map.keys(updatedTrees))-> {:halt, acc}
+                rowNumber > rowNum and String.to_integer(tree) >= String.to_integer(currentTreeHeight) -> {:halt, acc}
+                rowNumber > rowNum and String.to_integer(tree) < String.to_integer(currentTreeHeight) -> {:cont, acc + 1}
+                rowNumber <= rowNum ->
+                    {:cont, acc}
            end
         end)
+        visible
     end
 end
 
 totalVisible =
-List.foldl(Enum.sort(Map.keys(updatedTrees)), 0, fn rowNumber, acc -> 
+List.foldl(Enum.sort(Map.keys(updatedTrees)), [], fn rowNumber, acc -> 
     # IO.inspect(rowNumber)
     rowOfTrees = Map.get(updatedTrees, rowNumber)
     
     rowsWithColumnIndex = rowOfTrees |> Enum.with_index(0) |>Enum.map(fn {k,v}->{v,k} end) |> Map.new
     
 
-    visibleForRow = List.foldl(Enum.sort(Map.keys(rowsWithColumnIndex)), 0, fn columnNumber, colAcc -> 
+    visibleForRow = List.foldl(Enum.sort(Map.keys(rowsWithColumnIndex)), [], fn columnNumber, colAcc -> 
         currentTreeHeight = Enum.at(Map.get(updatedTrees, rowNumber), columnNumber)
+        # IO.inspect("currentHeight:")
+        # IO.inspect(currentTreeHeight)
         leftCheck = TreeChecker.checkLeft(currentTreeHeight, rowNumber, columnNumber, updatedTrees, rowsWithColumnIndex)
         rightCheck = TreeChecker.checkRight(currentTreeHeight, rowNumber, columnNumber, updatedTrees, rowsWithColumnIndex)
         upCheck = TreeChecker.checkUp(currentTreeHeight, rowNumber, columnNumber, updatedTrees, rowsWithColumnIndex)
         downCheck = TreeChecker.checkDown(currentTreeHeight, rowNumber, columnNumber, updatedTrees, rowsWithColumnIndex)
-
+        # IO.inspect("downCheck #{downCheck}") 
+        # IO.inspect("upCheck #{upCheck}")
+        # IO.inspect("leftCheck #{leftCheck}")
+        # IO.inspect("rightCheck #{rightCheck}")
+        # IO.inspect("total:  #{downCheck * upCheck * rightCheck * leftCheck}")
         cond do
-            # rowNumber - 1 < 0 or rowNumber + 1 >= numOfRows or columnNumber - 1 < 0 or columnNumber + 1 >= numOfColumns -> colAcc + 1
-            leftCheck or rightCheck or upCheck or downCheck -> colAcc + 1
-            true -> colAcc
+            true -> [ downCheck * upCheck * leftCheck * rightCheck | colAcc] 
         end
         
     end)
-    # IO.inspect(visibleForRow)
-    acc + visibleForRow
+    # visibleForRow  ++ acc 
+    [ Enum.at(Enum.sort(visibleForRow, :desc), 0) | acc]
     # IO.inspect(rowsWithColumnIndex)
 end)
 
 # IO.inspect(updatedTrees)
-IO.inspect(totalVisible)
+# IO.inspect(totalVisible)
+IO.inspect(Enum.sort(totalVisible, :desc))
+# IO.inspect("hello")
+# IO.inspect(totalVisible)
